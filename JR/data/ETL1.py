@@ -3,6 +3,7 @@ import zipfile
 
 import numpy as np
 from skimage import filters
+import scipy.signal
 import wget
 from PIL import Image
 
@@ -23,7 +24,9 @@ def progress_bar(p, max_len=30):
 
 def check_zip_file(filename, url):
     if not filename.exists():
+        print(f"{filename.name} doesn't exist... Downloading it")
         wget.download(url, str(filename))
+        print()
 
 
 class Record:
@@ -53,6 +56,10 @@ class Record:
             return
         threshold = filters.threshold_otsu(self.img, 16)
         self.img = list(np.cast[np.uint8](self.img > threshold))
+        # Compute the mean. If it is above 0.2, there is definitely a problem (lots of noise)
+        mean = np.mean(self.img)
+        if mean > 0.2:
+            return
         self.valid = True
 
 
