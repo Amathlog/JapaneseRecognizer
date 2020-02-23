@@ -1,5 +1,3 @@
-from pathlib import Path
-import os
 import struct
 import zipfile
 
@@ -9,9 +7,9 @@ import wget
 from PIL import Image
 
 from JR.data_temp.urls import urls
+from JR.data.config import DATA_DIR
 
-CURRENT_DIR = Path(os.path.abspath(os.path.dirname(__file__)))
-DATA_DIR = CURRENT_DIR / ".." / "data_temp"
+ZIP_FILE = DATA_DIR / "ETL1.zip"
 RECORD_SIZE = 2052
 IMG_SIZE_PACKED = 2016
 IMG_DIM = (64, 63)
@@ -26,11 +24,6 @@ def progress_bar(p, max_len=30):
 def check_zip_file(filename, url):
     if not filename.exists():
         wget.download(url, str(filename))
-
-
-def read_int(buffer, p, nb_bytes):
-    res = int.from_bytes(buffer[p:p+nb_bytes], "big")
-    return res, p + nb_bytes
 
 
 class Record:
@@ -53,23 +46,32 @@ class Record:
         self.max_intensity = unpaked_buffer[17]
         self.img = np.array(list(Image.frombuffer('F', IMG_DIM, unpaked_buffer[18], 'bit', 4).getdata()))\
             .reshape((63, 64))
+        self.valid = False
+        # For some reason some images have all the same pixel value.
+        # Discard those ones
+        if np.mean(self.img) == self.img[0][0]:
+            return
         threshold = filters.threshold_otsu(self.img, 16)
-        self.img = np.cast[np.uint8](self.img > threshold)
+        self.img = list(np.cast[np.uint8](self.img > threshold))
+        self.valid = True
 
 
 class ETL1:
-    def __init__(self):
+    def __init__(self, files_to_unpack=None, clean_up=False):
         self.data = []
-        self.load_data()
+        self.load_data(files_to_unpack)
+        if clean_up:
+            ZIP_FILE.unlink()
 
-    def load_data(self):
-        filename = DATA_DIR / "ETL1.zip"
-        check_zip_file(filename, urls["ETL-1"])
+    def load_data(self, files_to_unpack):
+        check_zip_file(ZIP_FILE, urls["ETL-1"])
 
-        zip = zipfile.ZipFile(filename, 'r')
-        for name in zip.namelist():
+        zip = zipfile.ZipFile(ZIP_FILE, 'r')
+        if files_to_unpack is None:
+            files_to_unpack = zip.namelist()
+        for name in files_to_unpack:
             splitName = name.split('/')
-            if len(splitName[1]) == 0 or splitName[0] == "ETL1INFO" or splitName[1] != "ETL1C_07":
+            if len(splitName[1]) == 0 or splitName[1] == "ETL1INFO":
                 continue
             temp_data = zip.read(name)
             assert len(temp_data) % RECORD_SIZE == 0
@@ -79,9 +81,11 @@ class ETL1:
             p = 0
             while p < len(temp_data):
                 progress_bar(p / len(temp_data))
-                self.data.append(Record(temp_data[p:p+RECORD_SIZE]))
+                record = Record(temp_data[p:p+RECORD_SIZE])
+                if record.valid:
+                    self.data.append(record)
                 p += RECORD_SIZE
-            break
+            print("\nDone!")
 
 
 if __name__ == "__main__":
