@@ -1,3 +1,4 @@
 .idea/
 *.pyc
-data/
+data_temp/
+*.egg-info
