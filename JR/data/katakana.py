@@ -8,6 +8,8 @@ import scipy.ndimage
 from JR.data.config import DATA_DIR
 from JR.data.ETL1 import ETL1
 
+import numpy as np
+
 import torch
 from torch.utils.data import Dataset, DataLoader
 
@@ -15,6 +17,8 @@ FILENAME = DATA_DIR / "Katakana.data"
 
 SEED = 152664
 TRAINING_RATIO = 0.8
+IMG_DIM = (63, 64)
+NB_CLASSES = 51
 
 
 class Katakana:
@@ -57,9 +61,9 @@ class Katakana:
             self.evaluation_data.extend(flatten(values[indexes[limit:]]))
             self.evaluation_classes.extend([classes[key]] * (len(values) - limit))
 
-        self.training_data = np.array(self.training_data)
+        self.training_data = np.array(self.training_data).astype(np.float32)
         self.training_classes = np.array(self.training_classes)
-        self.evaluation_data = np.array(self.evaluation_data)
+        self.evaluation_data = np.array(self.evaluation_data).astype(np.float32)
         self.evaluation_classes = np.array(self.evaluation_classes)
 
     def preprocess_data(self):
@@ -122,7 +126,6 @@ class KatakanaTestingDataset(KatakanaDataset):
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    import numpy as np
     if not DATA_DIR.exists():
         DATA_DIR.mkdir(parents=True, exist_ok=True)
     x_ = Katakana()
