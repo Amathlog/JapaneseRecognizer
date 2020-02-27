@@ -8,10 +8,14 @@ import scipy.ndimage
 from JR.data.config import DATA_DIR
 from JR.data.ETL1 import ETL1
 
+import torch
+from torch.utils.data import Dataset, DataLoader
+
 FILENAME = DATA_DIR / "Katakana.data"
 
 SEED = 152664
 TRAINING_RATIO = 0.8
+
 
 class Katakana:
     def __init__(self):
@@ -53,6 +57,11 @@ class Katakana:
             self.evaluation_data.extend(flatten(values[indexes[limit:]]))
             self.evaluation_classes.extend([classes[key]] * (len(values) - limit))
 
+        self.training_data = np.array(self.training_data)
+        self.training_classes = np.array(self.training_classes)
+        self.evaluation_data = np.array(self.evaluation_data)
+        self.evaluation_classes = np.array(self.evaluation_classes)
+
     def preprocess_data(self):
         files_to_unpack = [
             "ETL1/ETL1C_07",
@@ -72,23 +81,43 @@ class Katakana:
         with FILENAME.open('wb') as f:
             f.write(zlib.compress(data))
 
-    def data_augmentation(self):
-        # We will 3 random rotation of the image
-        # between -20 and 20 deg
-        print("Generating data augmentation")
-        initial_data_size = len(self.all_data)
-        for i in range(initial_data_size):
-            for _ in range(3):
-                tmp = copy.deepcopy(self.all_data[i])
-                angle = np.random.uniform(-20, 20)
-                tmp.img = scipy.ndimage.rotate(tmp.img, angle)
-                self.all_data.append(tmp)
-
     def __repr__(self):
         res = "KATANA DATASET:\n"
         for key, value in self.all_data.items():
             res += f"{key}: {len(value)} entries\n"
         return res
+
+
+class KatakanaDataset(Dataset):
+    def __init__(self, dataset: Katakana, transform=None):
+        self.dataset = dataset
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.get_data_and_classes()[0])
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        imgs, classes = map(lambda x: x[idx], self.get_data_and_classes())
+        if self.transform is not None:
+            imgs = self.transform(imgs)
+
+        return imgs, classes
+
+    def get_data_and_classes(self):
+        raise NotImplementedError
+
+
+class KatakanaTrainingDataset(KatakanaDataset):
+    def get_data_and_classes(self):
+        return self.dataset.training_data, self.dataset.training_classes
+
+
+class KatakanaTestingDataset(KatakanaDataset):
+    def get_data_and_classes(self):
+        return self.dataset.evaluation_data, self.dataset.evaluation_classes
 
 
 if __name__ == "__main__":
@@ -98,15 +127,21 @@ if __name__ == "__main__":
         DATA_DIR.mkdir(parents=True, exist_ok=True)
     x_ = Katakana()
     print(x_)
+    training_dataset = KatakanaTrainingDataset(x_)
+    training_loader = DataLoader(training_dataset, batch_size=36,
+               shuffle=True, num_workers=2)
     # Visualize some data
-    for i in range(10):
-        values = np.random.choice(x_.all_data, 36)
-        shape = list(np.shape(values[0].img))
+    for i, sampled in enumerate(training_loader):
+        if i >= 10:
+            break
+
+        values = sampled[0].numpy()
+        shape = (63, 64)
         big_shape = (shape[0] * 6, shape[1] * 6)
         total = np.zeros(big_shape)
         for i in range(6):
             for j in range(6):
-                total[i*shape[0]:(i+1)*shape[0],j*shape[1]:(j+1)*shape[1]] = values[i*6+j].img
+                total[i*shape[0]:(i+1)*shape[0],j*shape[1]:(j+1)*shape[1]] = values[i*6+j].reshape(63,64)
         plt.imshow(total)
         plt.show()
         plt.close()
