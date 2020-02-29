@@ -2,7 +2,8 @@ from torch.utils.data import DataLoader
 
 from JR.data.katakana import Katakana, KatakanaTestingDataset, KatakanaTrainingDataset, NB_CLASSES, IMG_DIM
 from JR.training.mlp_model import MLPClassifier
-from JR.training.train import train
+from JR.training.cnn_model import CNNClassifier
+from JR.training.train import train as NNTrain
 from JR.utils import get_nb_threads
 from JR.data.config import DATA_DIR
 
@@ -20,13 +21,13 @@ training_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffl
 testing_dataloader = DataLoader(testing_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
 # Create the model
-model = MLPClassifier(IMG_DIM, NB_CLASSES)
+model = CNNClassifier(IMG_DIM, NB_CLASSES)
 
 
 def train():
     # Then train!
     print("Start training")
-    train(training_dataloader, testing_dataloader, 2, 2, model, DATA_DIR)
+    NNTrain(training_dataloader, testing_dataloader, 100, 5, model, DATA_DIR)
     print("Training is over")
 
 def test(model_to_load):
@@ -43,7 +44,7 @@ def test(model_to_load):
             if label_class == predicted_class:
                 continue
 
-            plt.imshow(input.numpy().reshape(63,64))
+            plt.imshow(input.numpy().reshape(64,64))
             plt.title(f"Class: {label_class} ; Predicted: {predicted_class}")
             plt.show()
             plt.close()

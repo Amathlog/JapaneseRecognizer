@@ -17,7 +17,7 @@ FILENAME = DATA_DIR / "Katakana.data"
 
 SEED = 152664
 TRAINING_RATIO = 0.8
-IMG_DIM = (63, 64)
+IMG_DIM = (64, 64)
 NB_CLASSES = 51
 
 
@@ -141,12 +141,12 @@ if __name__ == "__main__":
             break
 
         values = sampled[0].numpy()
-        shape = (63, 64)
+        shape = IMG_DIM
         big_shape = (shape[0] * 6, shape[1] * 6)
         total = np.zeros(big_shape)
         for i in range(6):
             for j in range(6):
-                total[i*shape[0]:(i+1)*shape[0],j*shape[1]:(j+1)*shape[1]] = values[i*6+j].reshape(63,64)
+                total[i*shape[0]:(i+1)*shape[0],j*shape[1]:(j+1)*shape[1]] = values[i*6+j].reshape(IMG_DIM)
         plt.imshow(total)
         plt.show()
         plt.close()

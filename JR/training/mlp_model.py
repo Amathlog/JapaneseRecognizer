@@ -1,14 +1,12 @@
 import torch.nn as nn
 import torch.nn.functional as F
-import torch
+
+from JR.training.model import Classifier
 
 
-class MLPClassifier(nn.Module):
+class MLPClassifier(Classifier):
     def __init__(self, input_shape, nb_classes, hidden_layers=(1024, 512, 256, 128)):
-        super(MLPClassifier, self).__init__()
-
-        self.input_size = input_shape[0] * input_shape[1]
-        self.nb_classes = nb_classes
+        super(MLPClassifier, self).__init__(input_shape, nb_classes)
 
         sizes = (self.input_size,) + hidden_layers + (nb_classes,)
 
@@ -21,10 +19,3 @@ class MLPClassifier(nn.Module):
             if i < len(self.layers) - 1:
                 x = F.relu(x)
         return x
-
-    def save(self, path):
-        torch.save(self.state_dict(), path)
-
-    def load(self, path):
-        self.load_state_dict(torch.load(path))
-        self.eval()

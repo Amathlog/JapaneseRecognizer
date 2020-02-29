@@ -13,7 +13,8 @@ from JR.data.config import DATA_DIR
 ZIP_FILE = DATA_DIR / "ETL1.zip"
 RECORD_SIZE = 2052
 IMG_SIZE_PACKED = 2016
-IMG_DIM = (64, 63)
+ORIGINAL_IMG_DIM = (64, 63)
+IMG_DIM = (64, 64)
 
 
 def progress_bar(p, max_len=30):
@@ -47,8 +48,9 @@ class Record:
         self.x_pos = unpaked_buffer[15]
         self.min_intensity = unpaked_buffer[16]
         self.max_intensity = unpaked_buffer[17]
-        self.img = np.array(list(Image.frombuffer('F', IMG_DIM, unpaked_buffer[18], 'bit', 4).getdata()))\
-            .reshape((63, 64))
+        self.img = np.array(list(Image.frombuffer('F', ORIGINAL_IMG_DIM, unpaked_buffer[18], 'bit', 4).getdata()))\
+            .reshape((ORIGINAL_IMG_DIM[1], ORIGINAL_IMG_DIM[0]))
+        self.img = np.concatenate([np.zeros((1, 64)), self.img], axis=0)
         self.valid = False
         # For some reason some images have all the same pixel value.
         # Discard those ones
