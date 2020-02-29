@@ -28,6 +28,7 @@ class Katakana:
         self.training_classes = []
         self.evaluation_data = []
         self.evaluation_classes = []
+        self.classes = []
         self.load_data()
 
     def load_data(self):
@@ -47,6 +48,7 @@ class Katakana:
 
     def generate_dataset(self):
         classes = {key: i for i, (key, _) in enumerate(self.all_data.items())}
+        self.classes = list(classes.keys())
         flatten = lambda x: [np.reshape(d.img, (-1,)) for d in x]
         np.random.seed(SEED)
         for key, values in self.all_data.items():

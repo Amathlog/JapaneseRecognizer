@@ -2,17 +2,20 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from pathlib import Path
 
 
 def train(train_loader: DataLoader,
           test_loader: DataLoader,
           nb_epochs: int,
           test_every_n_epochs: int,
-          model: nn.Module):
+          model: nn.Module,
+          saving_path: Path):
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
+    best_loss = -1
     for epoch in range(nb_epochs):
         running_loss = 0.0
 
@@ -30,9 +33,9 @@ def train(train_loader: DataLoader,
 
             # print statistics
             running_loss += loss.item()
-            if i % 2000 == 1999:  # print every 2000 mini-batches
+            if i % 100 == 99:  # print every 100 mini-batches
                 print('[%d, %5d] loss: %.3f' %
-                      (epoch + 1, i + 1, running_loss / 2000))
+                      (epoch + 1, i + 1, running_loss / 100))
                 running_loss = 0.0
 
         if (epoch + 1) % test_every_n_epochs == 0:
@@ -43,3 +46,7 @@ def train(train_loader: DataLoader,
                 testing_loss += criterion(model(inputs), labels)
 
             print('Testing loss: %.3f' % (running_loss / len(test_loader)))
+            if best_loss == -1 or testing_loss < best_loss:
+                best_loss = testing_loss
+                model_name = saving_path / f"katakana_epoch{epoch}.model"
+                model.save(str(model_name))

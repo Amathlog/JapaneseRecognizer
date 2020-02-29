@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
+import torch
 
 
 class MLPClassifier(nn.Module):
@@ -20,3 +21,10 @@ class MLPClassifier(nn.Module):
             if i < len(self.layers) - 1:
                 x = F.relu(x)
         return x
+
+    def save(self, path):
+        torch.save(self.state_dict(), path)
+
+    def load(self, path):
+        self.load_state_dict(torch.load(path))
+        self.eval()
