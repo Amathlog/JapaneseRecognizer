@@ -13,7 +13,7 @@ def train(train_loader: DataLoader,
           saving_path: Path):
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    optimizer = optim.Adam(model.parameters(), lr=0.0001)
 
     best_loss = -1
     for epoch in range(nb_epochs):

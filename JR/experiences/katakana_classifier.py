@@ -15,7 +15,7 @@ training_dataset = KatakanaTrainingDataset(full_dataset)
 testing_dataset = KatakanaTestingDataset(full_dataset)
 
 # Then create the dataloader associated
-batch_size = 32
+batch_size = 16
 num_workers = get_nb_threads()
 training_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
 testing_dataloader = DataLoader(testing_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
